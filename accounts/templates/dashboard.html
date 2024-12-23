@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 10;
+            padding: 10px;
+            display: flex;
+            gap: 10px; /* Adds space between tiles */
+            flex-wrap: wrap;
+            background: #f4f4f4;
+        }
+
+        .tile1, .tile2, .tile3 {
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 5px 10px 20px rgba(255, 0, 0, 0.1);
+            background: white;
+        }
+
+        .tile1 {
+            width: 46%; /* Adjust width as needed */
+            height: 350px; /* Adjust height as needed */
+        }
+
+        .tile2 {
+            width: 46%; /* Adjust width as needed */
+            height: 350px; /* Adjust height as needed */
+        }
+
+        .tile3 {
+            width: 96%; /* Full width for the table */
+        }
+
+
+        .tile1, .tile2, .tile3 h3 {
+            margin: 0 0 15px;
+            font-size: 20px;
+            color: #333;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .chart-container {
+            text-align: center;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #5492d4;
+        }
+
+        .speedometer-label {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .speedometer-label strong {
+            font-weight: bold;
+        }
+    </style>
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="tile1">
+        <h3>Expense Breakdown</h3>
+        <div class="chart-container">
+            <canvas id="expenseChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <div class="tile2">
+        <h3>Expense Speedometer</h3>
+        <div class="chart-container">
+            <canvas id="speedometerChart" width="400" height="200"></canvas>
+        </div>
+        <div class="speedometer-label">
+            <span>Total Expenses: <strong>₹{{ total_expenses }}</strong></span> /
+            <span>Total Budget: <strong>₹{{ total_budget }}</strong></span>
+        </div>
+    </div>
+
+    <div class="tile3">
+        <h3>Latest Expenses</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in latest_expenses %}
+                <tr>
+                    <td>{{ expense.date }}</td>
+                    <td>{{ expense.category }}</td>
+                    <td>₹{{ expense.amount }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Bar Chart Logic
+            const categories = JSON.parse('{{ categories|safe }}');
+            const amounts = JSON.parse('{{ amounts|safe }}');
+    
+            const ctx = document.getElementById('expenseChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: categories,
+                    datasets: [{
+                        label: 'Expense Amount (₹)',
+                        data: amounts,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.5)', // Red
+                            'rgba(54, 162, 235, 0.5)', // Blue
+                            'rgba(255, 206, 86, 0.5)', // Yellow
+                            'rgba(75, 192, 192, 0.5)', // Teal
+                            'rgba(153, 102, 255, 0.5)', // Purple
+                            'rgba(255, 159, 64, 0.5)'  // Orange
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)', // Red
+                            'rgba(54, 162, 235, 1)', // Blue
+                            'rgba(255, 206, 86, 1)', // Yellow
+                            'rgba(75, 192, 192, 1)', // Teal
+                            'rgba(153, 102, 255, 1)', // Purple
+                            'rgba(255, 159, 64, 1)'  // Orange
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: true, position: 'top' }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Categories' }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Amount (₹)' }
+                        }
+                    }
+                }
+            });
+    
+            // Speedometer Logic
+            const totalBudget = parseFloat('{{ total_budget|default:"0"|floatformat:2 }}');
+            const totalExpenses = parseFloat('{{ total_expenses|default:"0"|floatformat:2 }}');
+            const percentage = totalBudget > 0 ? (totalExpenses / totalBudget) : 0;
+            const needleAngle = percentage > 1 ? Math.PI : percentage * Math.PI; // Cap needle at the max angle (total budget)
+
+            const speedometerCanvas = document.getElementById('speedometerChart');
+            const ctxSpeedometer = speedometerCanvas.getContext('2d');
+
+            const width = speedometerCanvas.width;
+            const height = speedometerCanvas.height;
+
+            // Create Gradient (green -> orange -> red)
+            const gradient = ctxSpeedometer.createLinearGradient(0, height, width, height);
+            gradient.addColorStop(0, 'green'); // Green for low
+            gradient.addColorStop(0.5, 'orange'); // Orange for mid-range
+            gradient.addColorStop(1, 'red'); // Red for high
+
+            // Draw Semi-Circle Arc with Gradient
+            ctxSpeedometer.beginPath();
+            ctxSpeedometer.arc(width / 2, height, width / 2 - 10, Math.PI, 2 * Math.PI);
+            ctxSpeedometer.lineWidth = 20;
+            ctxSpeedometer.strokeStyle = gradient; // Use the gradient for the stroke
+            ctxSpeedometer.stroke();
+
+            // Draw Budget Labels
+            const labelCount = 5; // Number of labels (0, 25%, 50%, 75%, 100%)
+            const angleStep = Math.PI / labelCount;
+            ctxSpeedometer.font = '12px Arial';
+            ctxSpeedometer.textAlign = 'center';
+            ctxSpeedometer.textBaseline = 'middle';
+            for (let i = 0; i <= labelCount; i++) {
+                const angle = Math.PI + (i * angleStep);
+                const label = (i * (totalBudget / labelCount)).toFixed(0); // Budget at each interval
+                const labelX = width / 2 + (width / 2 - 30) * Math.cos(angle);
+                const labelY = height + (width / 2 - 30) * Math.sin(angle);
+                ctxSpeedometer.fillText(`₹${label}`, labelX, labelY);
+            }
+
+            // Draw Needle (Color based on percentage)
+            const centerX = width / 2;
+            const centerY = height;
+            const needleLength = width / 2 - 30;
+
+            // Determine Needle Color
+            let needleColor = 'green';
+            if (percentage > 0.8) {
+                needleColor = 'red';
+            } else if (percentage > 0.5) {
+                needleColor = 'orange';
+            }
+
+            // Calculate needle tip coordinates
+            const needleTipX = centerX + needleLength * Math.cos(needleAngle - Math.PI);
+            const needleTipY = centerY + needleLength * Math.sin(needleAngle - Math.PI);
+
+            // Define needle base width
+            const needleBaseWidth = 8;
+
+            // Calculate coordinates for the left and right corners of the needle base
+            const baseLeftX = centerX + needleBaseWidth * Math.cos(needleAngle - Math.PI + Math.PI / 2);
+            const baseLeftY = centerY + needleBaseWidth * Math.sin(needleAngle - Math.PI + Math.PI / 2);
+            const baseRightX = centerX + needleBaseWidth * Math.cos(needleAngle - Math.PI - Math.PI / 2);
+            const baseRightY = centerY + needleBaseWidth * Math.sin(needleAngle - Math.PI - Math.PI / 2);
+
+            // Draw the triangular needle
+            ctxSpeedometer.beginPath();
+            ctxSpeedometer.moveTo(baseLeftX, baseLeftY); // Left corner of the base
+            ctxSpeedometer.lineTo(baseRightX, baseRightY); // Right corner of the base
+            ctxSpeedometer.lineTo(needleTipX, needleTipY); // Needle tip
+            ctxSpeedometer.closePath();
+
+            // Fill needle with dynamic color
+            ctxSpeedometer.fillStyle = needleColor;
+            ctxSpeedometer.fill();
+
+            // Draw Pivot
+            ctxSpeedometer.beginPath();
+            ctxSpeedometer.arc(centerX, centerY, 5, 0, Math.PI * 2);
+            ctxSpeedometer.fillStyle = '#333'; // Dark gray pivot
+            ctxSpeedometer.fill();
+        });
+    </script>
+</body>
+</html>

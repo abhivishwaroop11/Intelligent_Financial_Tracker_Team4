@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Reports</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .report-container {
+            margin-bottom: 30px;
+        }
+        .report-container h2 {
+            color: #333;
+        }
+        .report-item {
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+        .report-item strong {
+            font-weight: bold;
+        }
+        .chart-container {
+            margin-top: 40px;
+            text-align: center;
+        }
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+        .download-container {
+            margin-top: 40px;
+            text-align: center;
+        }
+        .download-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .download-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Include jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Include latest html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+    <div class="report-container">
+        <h1>Financial Report</h1>
+        <div class="report-item">
+            <strong>Total Expense:</strong> ₹{{ total_expense|floatformat:2 }}
+        </div>
+        <div class="report-item">
+            <strong>Average Daily Expense:</strong> ₹{{ average_daily_expense|floatformat:2 }}
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="expenseChart" width="400" height="200"></canvas>
+    </div>
+
+    <div class="download-container">
+        <button class="download-btn" id="downloadPdfBtn">Download PDF</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function () {
+            const categories = JSON.parse('{{ categories|safe }}');
+            const amounts = JSON.parse('{{ amounts|safe }}');
+            const totalExpense = '{{ total_expense|floatformat:2 }}';
+            const averageExpense = '{{ average_daily_expense|floatformat:2 }}';
+
+            // Create the bar chart
+            const ctx = document.getElementById('expenseChart').getContext('2d');
+            const expenseChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: categories,
+                    datasets: [{
+                        label: 'Expense Amount (₹)',
+                        data: amounts,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.5)',
+                            'rgba(54, 162, 235, 0.5)',
+                            'rgba(255, 206, 86, 0.5)',
+                            'rgba(75, 192, 192, 0.5)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Categories'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Amount (₹)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Function to download the PDF
+            document.getElementById('downloadPdfBtn').addEventListener('click', async function () {
+                const { jsPDF } = window.jspdf;
+
+                // Initialize jsPDF and use the default font (supports rupee symbol)
+                const doc = new jsPDF();
+
+                // Add the report text
+                doc.setFontSize(16);
+                doc.text('Financial Report', 14, 20);
+                doc.setFontSize(12);
+                doc.text(`Total Expense: Rs. ${totalExpense}`, 14, 30);
+                doc.text(`Average Daily Expense: Rs. ${averageExpense}`, 14, 40);
+
+                // Capture the chart
+                const canvas = await html2canvas(document.getElementById('expenseChart'));
+                const imgData = canvas.toDataURL('image/png');
+                doc.addImage(imgData, 'PNG', 14, 50, 180, 100);
+
+                // Save the PDF
+                doc.save('financial_report.pdf');
+            });
+        });
+    </script>
+</body>
+</html>
