@@ -1,18 +1,28 @@
 # Intelligent Financial Planning Hub (Finance Tracker)
 
-## Overview
-The Intelligent Financial Planning Hub is a web-based application designed to help users manage their personal finances effectively. It offers features like expense tracking, budget planning, and generating financial reports with data visualizations. The application enables users to set budget limits, receive alerts for overspending, and track financial goals through a user-friendly dashboard.
+## 🌟 **Overview**
+The **Intelligent Financial Planning Hub** is a feature-rich web application designed to help users manage their personal finances. Track expenses, set budgets, and generate insightful reports, all within a user-friendly and interactive interface.
 
-## Technologies Used
-### Frontend:
-- **HTML/CSS**: For structuring and styling the user interface.
-- **JavaScript**: For interactive features and dynamic updates.
+### Key Features:
+- 🧾 **Expense Management**: Add, edit, and track expenses seamlessly.
+- 📊 **Data Visualizations**: Interactive charts for spending analysis.
+- 🚨 **Budget Alerts**: Stay on track with real-time notifications.
+- 📥 **Report Generation**: Export financial reports as PDFs.
+- ⚙️ **User Authentication**: Secure login and registration.
 
-### Backend:
-- **Django (Python)**: For handling server-side logic.
+---
 
-### Database:
-- **MySQL**: For storing and managing financial data.
+## 💻 **Technologies Used**
+| **Technology** | **Usage**                  |
+|-----------------|---------------------------|
+| HTML/CSS        | Frontend Structure        |
+| JavaScript      | Interactive Features      |
+| Django (Python) | Backend Framework         |
+| MySQL           | Database Management       |
+| jsPDF           | PDF Generation           |
+| chart.js         | Visual Graphs and charts|
+
+---
 
 ## Team Members
 1. **P V Shyam Sundar Lal** (Team Lead)
